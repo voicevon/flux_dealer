@@ -4,26 +4,28 @@
 #include <Arduino.h>
 
 // ============================================================================
-// Simple fixed-size FIFO queue for incoming button-press target IDs.
-// Value 0 is the "empty" sentinel returned when the queue is drained.
+// InputQueue —— 固定大小的目标 ID 先进先出队列
+//
+// 用于缓存按钮按下产生的分拣目标 ID（1–4）。
+// 值 0 为"空"哨兵：队列耗尽时 pop() 返回 0。
 // ============================================================================
 class InputQueue {
 public:
-  static const int CAPACITY = 10;
+  static const int CAPACITY = 10; // 最大缓存条目数
 
   InputQueue() : _head(0), _tail(0) {}
 
-  // Push a target ID. Returns false and drops silently if the queue is full.
+  // 压入一个目标 ID。队列满时静默丢弃，返回 false。
   bool push(int target) {
     int next = (_head + 1) % CAPACITY;
-    if (next == _tail) return false; // full
+    if (next == _tail) return false; // 队列已满
     _buf[_head] = target;
     _head = next;
-    Serial.print("Queued Task -> Target "); Serial.println(target);
+    Serial.print("已入队 -> 目标 "); Serial.println(target);
     return true;
   }
 
-  // Pop and return the oldest item. Returns 0 if the queue is empty.
+  // 弹出最早入队的目标 ID。队列为空时返回 0。
   int pop() {
     if (empty()) return 0;
     int val = _buf[_tail];
@@ -31,15 +33,16 @@ public:
     return val;
   }
 
+  // 队列是否为空
   bool empty() const { return _head == _tail; }
 
-  // Discard all pending items.
+  // 丢弃所有待处理条目
   void flush() { _head = _tail = 0; }
 
 private:
-  int _buf[CAPACITY];
-  int _head;
-  int _tail;
+  int _buf[CAPACITY]; // 环形缓冲区
+  int _head;          // 写指针（下一个写入位置）
+  int _tail;          // 读指针（下一个弹出位置）
 };
 
 #endif // INPUT_QUEUE_H
