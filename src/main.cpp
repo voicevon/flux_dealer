@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include <AccelStepper.h>
+#include <esp_task_wdt.h>
 #include "pins.h"
 #include "SorterController.h"
-#include "ButtonScanner.h"
+#include "BleManager.h"
+#include "Logger.h"
 
 // ============================================================================
 // 硬件：ESP32
@@ -11,14 +13,10 @@
 AccelStepper sharedStepper(AccelStepper::DRIVER, SHARED_STEP_PIN, DUMMY_DIR_PIN);
 
 SorterController sorter(sharedStepper);
+BleManager bleManager;
 
-// ============================================================================
-// 按钮事件回调（传入 ButtonScanner 的自由函数）
-// ============================================================================
-void onTargetPressed(int targetID) { sorter.queueTarget(targetID); }
-void onHomingTriggered()           { sorter.triggerHoming();        }
-
-ButtonScanner buttons(onTargetPressed, onHomingTriggered);
+// 看门狗超时时间（秒）
+#define WDT_TIMEOUT_S  10
 
 // ============================================================================
 // 初始化 / 主循环
@@ -29,16 +27,28 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) {}   // 等待串口就绪
 
-  Serial.println("--- 分拣机迷你控制器 ---");
-  Serial.println("硬件：ESP32");
+  LOG_I("--- 分拣机迷你控制器 ---");
+  LOG_I("硬件：ESP32");
+
+  // 启用看门狗定时器
+  esp_task_wdt_init(WDT_TIMEOUT_S, true);
+  esp_task_wdt_add(NULL);
+  LOG_I("看门狗已启用 (超时 %d 秒)", WDT_TIMEOUT_S);
 
   sorter.begin();
-  buttons.begin();
+  bleManager.begin(&sorter);
 
-  Serial.println("初始化完成，等待指令。");
+  LOG_I("初始化完成，等待 phone_sorter 连接或传感器触发...");
 }
 
 void loop() {
+  // 喂看门狗
+  esp_task_wdt_reset();
+
+  // 维护之前的状态以决定是否通知蓝牙
+  static SorterController::State lastState = SorterController::IDLE;
+  static SorterController::ErrorCode lastError = SorterController::ERR_NONE;
+  
   // 心跳 LED（1 Hz 闪烁）
   static unsigned long lastBeat = 0;
   if (millis() - lastBeat >= 1000) {
@@ -46,6 +56,19 @@ void loop() {
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
   }
 
-  buttons.scan();   // 防抖扫描，派发按钮事件
   sorter.update();  // 驱动状态机与步进电机
+  
+  // 状态改变时，通知蓝牙
+  SorterController::State currentState = sorter.getState();
+  if (currentState != lastState) {
+    bleManager.updateStatus(currentState);
+    lastState = currentState;
+  }
+
+  // 错误码改变时，通知蓝牙
+  SorterController::ErrorCode currentError = sorter.getErrorCode();
+  if (currentError != lastError) {
+    bleManager.updateError(currentError);
+    lastError = currentError;
+  }
 }

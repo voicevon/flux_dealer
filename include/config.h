@@ -15,8 +15,18 @@
 // 引脚定义见 pins.h（X_MS1_PIN / X_MS2_PIN 等）
 #define MICROSTEP_RESOLUTION  16    // 软件目标细分：1 | 2 | 4 | 16
 
+// --- 分拣逻辑配置 ---
+#define MAX_TARGETS           8     // 最大支持的目标槽位数
+
+#define NUM_MOTORS            8     // 电机数量
+
+// 路由表：定义 Target ID (1~8) 在 8 级电机中的动作。
+// +1 = 正转 (向下级放行)
+// -1 = 反转 (向本地槽位剔除)
+//  0 = 不动作 (MOTOR_NO_MOVE)
+extern const int8_t ROUTING_TABLE[MAX_TARGETS + 1][NUM_MOTORS];
+
 // --- 步进电机几何参数 ---
-#define NUM_MOTORS            8
 #define MOTOR_FULL_STEPS      200   // 每转整步数（1.8°/步电机）
 #define GEAR_RATIO            4     // 减速比 1:4（电机转 4 圈，分拣轮转 1 圈）
 // 分拣轮旋转 90° 所需步数：(整步数 × 细分 × 减速比) / 4 = 3200

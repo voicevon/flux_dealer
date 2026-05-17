@@ -33,11 +33,8 @@
 #define DIR_DATA_OUT       21 // HC595 串行数据输入 (DS)
 #define HOME_DATA_IN       34 // HC165 串行数据输出 (Q7)
 
-// --- 目标选择按钮 (留作参考，未变更) ---
-#define BTN_TARGET_1_PIN   39
-#define BTN_TARGET_2_PIN   36 // 改为了 36 以避开部分引脚
-#define BTN_TARGET_3_PIN   35
-#define BTN_TARGET_4_PIN   32 // 这里的按钮可能会冲突，先随便设，用户会自己改
+// --- 传感器 ---
+#define ENTRANCE_SENSOR_PIN 39 // 光电开关，检测芦笋是否落入入口
 
 // --- 其他 ---
 #define LED_PIN            2
