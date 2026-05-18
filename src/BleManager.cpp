@@ -75,7 +75,8 @@ void BleManager::begin(SorterController* sorter) {
   // 1. 接收 Target ID 特征
   _pTargetChar = pService->createCharacteristic(
                       TARGET_CHARACTERISTIC_UUID,
-                      BLECharacteristic::PROPERTY_WRITE
+                      BLECharacteristic::PROPERTY_WRITE |
+                      BLECharacteristic::PROPERTY_WRITE_NR
                     );
   _pTargetChar->setCallbacks(new TargetCallbacks(_sorter));
 

@@ -326,8 +326,31 @@ sorter_mini_controller/
 
 每个 Phase 完成后须满足：
 
-1. `pio run` 编译零错误零警告
-2. 实机烧录后基本分拣流程正常（入口检测 → 运动 → 滑行 → 回到空闲）
-3. 归零流程正常（所有轴触发限位后停止）
-4. BLE 连接与目标下发正常
-5. 相关模块有清晰的头文件注释说明接口契约
+1. `sorter_mini_controller` 在 PlatformIO 环境下 `pio run` 编译零错误零警告。
+2. 实机烧录后基本分拣流程正常（入口检测 → 运动 → 滑行 → 回到空闲）。
+3. 归零流程正常（所有轴触发限位后停止）。
+4. BLE 连接与目标下发正常。
+5. 相关模块有清晰的头文件注释说明接口契约。
+6. **[新增验收]** Android 手机端 BLE 自动扫描、高健壮性重连、GATT 自动订阅、视觉分级目标槽位 ID 实时写入以及软恢复一键复位面板交互全部测试通过。
+
+---
+
+## 9. 附录：Android 蓝牙端集成方案 (已落地)
+
+为了打通物理设备与视觉主控，我们在 `phone_sorter` 侧实施了 **Phase 7** 重构：
+
+- [x] **7.1 AndroidManifest.xml 权限适配**
+  - 新增 API 31+ 的 `BLUETOOTH_SCAN` 和 `BLUETOOTH_CONNECT` 运行时权限支持。
+  - 声明低功耗蓝牙硬件特征 `<uses-feature android:name="android.hardware.bluetooth_le" />`。
+- [x] **7.2 物理等级与槽位映射开发 (SorterTargetMapper)**
+  - 实现从 Grade `"A"`-`"F"` 转换到 Target ID `1-8` 的逻辑，并以 `0` 作为异常安全哨兵。
+- [x] **7.3 低功耗蓝牙管理器 (BleManager)**
+  - 实现基于 `ScanFilter` 与 `ScanCallback` 的高精确性自动扫描。
+  - 实现连接状态机 (`DISCONNECTED` -> `CONNECTING` -> `CONNECTED` -> `DISCOVERED`)，利用 Kotlin StateFlow 提供反应式数据监听。
+  - 订阅 `STATUS` 与 `ERROR` 两个 Notify 特征，获取实时的 ESP32 状态码和故障码。
+  - 导出 `sendTargetId(targetId: Int)` 与 `sendCommand(cmd: Int)` 写入操作接口。
+- [x] **7.4 MainActivity 多段集成**
+  - 在 `displayResult()` 识别逻辑出口，插入 BLE 写入事件。
+  - 在 `onResume()` 中将旧的 `checkCameraPermission()` 升级为 Camera 和 BLE 统一多重动态权限校验 `checkPermissions()`。
+  - 扩展 `tvHUDStatus` 将蓝牙断连、通信中、已就绪、待机、故障状态与相机对齐状态合二为一显示。
+  - 新增 `showEsp32ErrorDialog(errorCode)` 弹窗，监听到非零故障码时自动唤出，并允许用户一键下发复归命令，进行故障软恢复。
