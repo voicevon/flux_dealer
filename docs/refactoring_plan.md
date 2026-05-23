@@ -10,7 +10,7 @@
 
 ### 1.1 项目背景
 
-本项目为 8 级芦笋分拣机的嵌入式控制器，运行于 ESP32 平台，采用 PlatformIO + Arduino Framework 开发。系统通过 BLE 从手机端 (`phone_sorter`) 接收分拣目标 ID，驱动 8 路步进电机完成流水线式分拣。
+本项目为 8 级芦笋分拣机的嵌入式控制器，运行于 ESP32 平台，采用 PlatformIO + Arduino Framework 开发。系统通过 BLE 从手机端 (`sorter_mini_phone`) 接收分拣目标 ID，驱动 8 路步进电机完成流水线式分拣。
 
 ### 1.2 当前文件结构
 
@@ -337,7 +337,7 @@ sorter_mini_controller/
 
 ## 9. 附录：Android 蓝牙端集成方案 (已落地)
 
-为了打通物理设备与视觉主控，我们在 `phone_sorter` 侧实施了 **Phase 7** 重构：
+为了打通物理设备与视觉主控，我们在 `sorter_mini_phone` 侧实施了 **Phase 7** 重构：
 
 - [x] **7.1 AndroidManifest.xml 权限适配**
   - 新增 API 31+ 的 `BLUETOOTH_SCAN` 和 `BLUETOOTH_CONNECT` 运行时权限支持。

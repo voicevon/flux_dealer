@@ -40,8 +40,9 @@ public:
 
 class CmdCallbacks : public BLECharacteristicCallbacks {
   SorterController* _sorter;
+  BleManager* _manager;
 public:
-  CmdCallbacks(SorterController* sorter) : _sorter(sorter) {}
+  CmdCallbacks(SorterController* sorter, BleManager* manager) : _sorter(sorter), _manager(manager) {}
   void onWrite(BLECharacteristic *pCharacteristic) override {
     std::string value = pCharacteristic->getValue();
     if (value.length() > 0) {
@@ -51,6 +52,8 @@ public:
         _sorter->clearError();
       } else if (cmd == 0x02) {
         _sorter->triggerHoming();
+      } else if (cmd == 0x03) {
+        _manager->triggerIdentifyBlink();
       }
     }
   }
@@ -60,13 +63,21 @@ BleManager::BleManager()
   : _sorter(nullptr), _pServer(nullptr), 
     _pTargetChar(nullptr), _pStatusChar(nullptr), 
     _pErrorChar(nullptr), _pCmdChar(nullptr), 
-    _deviceConnected(false) 
+    _deviceConnected(false), _identifyEndTime(0) 
 {}
 
 void BleManager::begin(SorterController* sorter) {
   _sorter = sorter;
 
-  BLEDevice::init("Sorter_Controller");
+  // 获取唯一的 MAC 地址并生成唯一的广播名称
+  uint64_t mac = ESP.getEfuseMac();
+  char bleName[30];
+  snprintf(bleName, sizeof(bleName), "Sorter_%02X%02X%02X", 
+           (uint8_t)(mac >> 16), (uint8_t)(mac >> 8), (uint8_t)mac);
+
+  BLEDevice::init(bleName);
+  LOG_I("动态生成唯一 BLE 广播名称: %s", bleName);
+
   _pServer = BLEDevice::createServer();
   _pServer->setCallbacks(new ServerCallbacks(this));
 
@@ -101,7 +112,7 @@ void BleManager::begin(SorterController* sorter) {
                       COMMAND_CHARACTERISTIC_UUID,
                       BLECharacteristic::PROPERTY_WRITE
                     );
-  _pCmdChar->setCallbacks(new CmdCallbacks(_sorter));
+  _pCmdChar->setCallbacks(new CmdCallbacks(_sorter, this));
 
   pService->start();
 
@@ -112,7 +123,7 @@ void BleManager::begin(SorterController* sorter) {
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
 
-  LOG_I("BLE 服务已启动，包含目标/状态/错误/指令特征，等待 phone_sorter 连接...");
+  LOG_I("BLE 服务已启动，包含目标/状态/错误/指令特征，等待 sorter_mini_phone 连接...");
 }
 
 void BleManager::updateStatus(SorterController::State state) {
@@ -133,4 +144,13 @@ void BleManager::updateError(SorterController::ErrorCode errorCode) {
 
 bool BleManager::isConnected() const {
   return _deviceConnected;
+}
+
+void BleManager::triggerIdentifyBlink() {
+  _identifyEndTime = millis() + 4000; // 快速闪烁 4 秒
+  LOG_I("触发 LED 快速闪烁以进行设备物理辨识 (持续 4 秒)");
+}
+
+bool BleManager::isIdentifying() const {
+  return millis() < _identifyEndTime;
 }

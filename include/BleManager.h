@@ -22,6 +22,8 @@ public:
   void updateStatus(SorterController::State state);
   void updateError(SorterController::ErrorCode errorCode);
   bool isConnected() const;
+  void triggerIdentifyBlink();
+  bool isIdentifying() const;
 
 private:
   SorterController* _sorter;
@@ -31,6 +33,7 @@ private:
   BLECharacteristic* _pErrorChar;
   BLECharacteristic* _pCmdChar;
   bool _deviceConnected;
+  unsigned long _identifyEndTime;
   
   // 回调类声明需要成为友元或内部类，为了简单，在 cpp 文件中实现一个全局的或局部的回调即可
   friend class TargetCallbacks;

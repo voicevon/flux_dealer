@@ -38,7 +38,7 @@ void setup() {
   sorter.begin();
   bleManager.begin(&sorter);
 
-  LOG_I("初始化完成，等待 phone_sorter 连接或传感器触发...");
+  LOG_I("初始化完成，等待 sorter_mini_phone 连接或传感器触发...");
 }
 
 void loop() {
@@ -49,9 +49,10 @@ void loop() {
   static SorterController::State lastState = SorterController::IDLE;
   static SorterController::ErrorCode lastError = SorterController::ERR_NONE;
   
-  // 心跳 LED（1 Hz 闪烁）
+  // 心跳 / 物理识别指示灯闪烁控制
   static unsigned long lastBeat = 0;
-  if (millis() - lastBeat >= 1000) {
+  unsigned long blinkInterval = bleManager.isIdentifying() ? 50 : 1000; // 识别期 10Hz 快闪，平时 1Hz 慢闪
+  if (millis() - lastBeat >= blinkInterval) {
     lastBeat = millis();
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
   }
