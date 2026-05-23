@@ -11,10 +11,10 @@
 // AccelStepper 需要的虚拟 DIR 引脚（不实际接线）
 #define DUMMY_DIR_PIN      22
 
-// --- 8路 ENABLE 脉冲屏蔽引脚 (低电平放行，高电平屏蔽) ---
+// --- 8路与门脉冲控制引脚 (高电平放行脉冲/电机旋转，低电平屏蔽脉冲/电机锁步。驱动芯片使能脚已接地常激活) ---
 // 数组在 SorterController 中定义，这里声明具体引脚
-#define EN_PIN_0           13
-#define EN_PIN_1           12
+#define EN_PIN_0           12
+#define EN_PIN_1           13
 #define EN_PIN_2           14
 #define EN_PIN_3           27
 #define EN_PIN_4           26

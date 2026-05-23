@@ -14,10 +14,10 @@ MotorHardware::~MotorHardware() {
 }
 
 void MotorHardware::begin(float maxSpeed, float acceleration) {
-  // 初始化所有 EN 引脚为屏蔽状态 (HIGH)
+  // 初始化所有 EN 引脚为屏蔽状态 (LOW)
   for (int i = 0; i < _numMotors; i++) {
     pinMode(_enablePins[i], OUTPUT);
-    digitalWrite(_enablePins[i], HIGH);
+    digitalWrite(_enablePins[i], LOW);
   }
 
   _sharedStepper.setMaxSpeed(maxSpeed); 
@@ -34,15 +34,15 @@ void MotorHardware::setAcceleration(float accel) {
 
 void MotorHardware::setEnableMask(uint8_t enableMask) {
   for (int i = 0; i < _numMotors; i++) {
-    // 1 表示放行 (LOW), 0 表示屏蔽 (HIGH)
+    // 1 表示放行 (HIGH), 0 表示屏蔽 (LOW)
     bool enabled = (enableMask & (1 << i)) != 0;
-    digitalWrite(_enablePins[i], enabled ? LOW : HIGH);
+    digitalWrite(_enablePins[i], enabled ? HIGH : LOW);
   }
 }
 
 void MotorHardware::setMotorEnabled(uint8_t motorIndex, bool enabled) {
   if (motorIndex < _numMotors) {
-    digitalWrite(_enablePins[motorIndex], enabled ? LOW : HIGH);
+    digitalWrite(_enablePins[motorIndex], enabled ? HIGH : LOW);
   }
 }
 
