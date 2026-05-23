@@ -10,6 +10,8 @@ public:
   ~MotorHardware();
 
   void begin(float maxSpeed, float acceleration);
+  void setMaxSpeed(float speed);
+  void setAcceleration(float accel);
   
   // 设置全体电机使能屏蔽：mask 中位 i 为 1 表示电机 i 启用（放行，引脚 LOW），0 表示屏蔽（引脚 HIGH）
   void setEnableMask(uint8_t enableMask);

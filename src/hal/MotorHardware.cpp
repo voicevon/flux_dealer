@@ -24,6 +24,14 @@ void MotorHardware::begin(float maxSpeed, float acceleration) {
   _sharedStepper.setAcceleration(acceleration);
 }
 
+void MotorHardware::setMaxSpeed(float speed) {
+  _sharedStepper.setMaxSpeed(speed);
+}
+
+void MotorHardware::setAcceleration(float accel) {
+  _sharedStepper.setAcceleration(accel);
+}
+
 void MotorHardware::setEnableMask(uint8_t enableMask) {
   for (int i = 0; i < _numMotors; i++) {
     // 1 表示放行 (LOW), 0 表示屏蔽 (HIGH)

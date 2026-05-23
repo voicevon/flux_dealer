@@ -1,3 +1,4 @@
+
 #include "apps/AppMotorDiag.h"
 #include "SorterController.h"
 #include "Logger.h"
@@ -14,6 +15,10 @@ void AppMotorDiag::begin() {
   _testState = TEST_IDLE;
   _pauseTimer = 0;
   
+  // 设置诊断专用的低速度和加速度
+  _controller._motorHardware.setMaxSpeed(DIAG_MOTOR_SPEED);
+  _controller._motorHardware.setAcceleration(DIAG_MOTOR_ACCEL);
+  
   // 初始屏蔽所有电机，复位位置
   _controller._motorHardware.setEnableMask(0x00);
   _controller._motorHardware.stop();
@@ -22,6 +27,11 @@ void AppMotorDiag::begin() {
 
 void AppMotorDiag::end() {
   LOG_I("--- [诊断模式] 电机诊断结束 ---");
+  
+  // 恢复正常的生产速度和加速度配置
+  _controller._motorHardware.setMaxSpeed(STEPPER_MAX_SPEED);
+  _controller._motorHardware.setAcceleration(STEPPER_ACCELERATION);
+  
   _controller._motorHardware.stop();
   _controller._motorHardware.setEnableMask(0x00);
 }

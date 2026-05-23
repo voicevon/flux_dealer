@@ -56,6 +56,41 @@ SorterController::~SorterController() {
 // ============================================================================
 
 void SorterController::begin() {
+  // 初始化细分引脚为输出
+  pinMode(MS1_PIN, OUTPUT);
+  pinMode(MS2_PIN, OUTPUT);
+  pinMode(MS3_PIN, OUTPUT);
+
+  // 根据 MICROSTEP_RESOLUTION 动态配置硬件细分引脚电平
+  #if MICROSTEP_RESOLUTION == 1
+    digitalWrite(MS1_PIN, LOW);
+    digitalWrite(MS2_PIN, LOW);
+    digitalWrite(MS3_PIN, LOW);
+    LOG_I("步进驱动细分已由软件设置为整步/无细分 (MS1=L, MS2=L, MS3=L)");
+  #elif MICROSTEP_RESOLUTION == 2
+    digitalWrite(MS1_PIN, HIGH);
+    digitalWrite(MS2_PIN, LOW);
+    digitalWrite(MS3_PIN, LOW);
+    LOG_I("步进驱动细分已由软件设置为 1/2 细分 (MS1=H, MS2=L, MS3=L)");
+  #elif MICROSTEP_RESOLUTION == 4
+    digitalWrite(MS1_PIN, LOW);
+    digitalWrite(MS2_PIN, HIGH);
+    digitalWrite(MS3_PIN, LOW);
+    LOG_I("步进驱动细分已由软件设置为 1/4 细分 (MS1=L, MS2=H, MS3=L)");
+  #elif MICROSTEP_RESOLUTION == 8
+    digitalWrite(MS1_PIN, HIGH);
+    digitalWrite(MS2_PIN, HIGH);
+    digitalWrite(MS3_PIN, LOW);
+    LOG_I("步进驱动细分已由软件设置为 1/8 细分 (MS1=H, MS2=H, MS3=L)");
+  #elif MICROSTEP_RESOLUTION == 16
+    digitalWrite(MS1_PIN, HIGH);
+    digitalWrite(MS2_PIN, HIGH);
+    digitalWrite(MS3_PIN, HIGH);
+    LOG_I("步进驱动细分已由软件设置为 1/16 细分 (MS1=H, MS2=H, MS3=H)");
+  #else
+    #error "不支持的细分分辨率，请检查 config.h 中的 MICROSTEP_RESOLUTION 定义"
+  #endif
+
   _spiBus.begin();
   _motorHardware.begin(STEPPER_MAX_SPEED, STEPPER_ACCELERATION);
   _entranceSensor.begin();
