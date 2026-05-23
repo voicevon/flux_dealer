@@ -18,6 +18,11 @@
 // 在每次 loop() 中调用 update() 驱动状态机与电机。
 // 通过 queueTarget() 投入待分拣目标，通过 triggerHoming() 触发归零。
 // ============================================================================
+class AppBase;
+class AppProduction;
+class AppMotorDiag;
+class AppHallDiag;
+
 class SorterController {
 public:
   // ---- 公开状态枚举（可供主程序读取）---------------------------------------
@@ -28,7 +33,9 @@ public:
     SLIDING_WAIT,     // 物品滑行等待（自然重力滑道）
     COMPLETED_BEAT,   // 本节拍结束，准备回到空闲
     HOMING,           // 归零校准中
-    ERROR_STATE       // 硬件或运行异常状态
+    ERROR_STATE,      // 硬件或运行异常状态
+    DIAG_MOTOR,       // 诊断电机模式
+    DIAG_HALL         // 诊断霍尔模式
   };
 
   enum ErrorCode {
@@ -41,6 +48,7 @@ public:
 
   // -------------------------------------------------------------------------
   SorterController(AccelStepper& sharedStepper);
+  ~SorterController();
 
   // 在 setup() 中调用一次——配置电机速度/加速度及限位开关引脚。
   void begin();
@@ -54,6 +62,12 @@ public:
   // 中止当前任务，进入归零校准模式。
   void triggerHoming();
 
+  // 切换当前运行的 APP 及其生命周期
+  void switchApp(State newState);
+
+  // 处理短按事件以进行诊断行为切换
+  void handleShortPress();
+
   State getState() const { return _state; }
   ErrorCode getErrorCode() const { return _errorCode; }
   
@@ -61,6 +75,10 @@ public:
   void clearError();
 
 private:
+  friend class AppProduction;
+  friend class AppMotorDiag;
+  friend class AppHallDiag;
+
   // ---- HAL 对象 ------------------------------------------------------------
   MotorHardware _motorHardware;
   ShiftRegisterBus _spiBus;
@@ -86,6 +104,12 @@ private:
 
   // ---- 硬件配置与状态 -----------------------------------------------------
   int _motorDirs[NUM_MOTORS];
+
+  // ---- APP 实例指针 --------------------------------------------------------
+  AppProduction* _appProduction;
+  AppMotorDiag*  _appMotorDiag;
+  AppHallDiag*   _appHallDiag;
+  AppBase*       _activeApp;
 
   // ---- 私有辅助函数 --------------------------------------------------------
 

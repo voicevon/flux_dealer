@@ -1,6 +1,9 @@
 #include "SorterController.h"
 #include "pins.h"
 #include "Logger.h"
+#include "apps/AppProduction.h"
+#include "apps/AppMotorDiag.h"
+#include "apps/AppHallDiag.h"
 #include <Arduino.h>
 
 // 定义全局的路由配置表
@@ -18,7 +21,7 @@ const int8_t ROUTING_TABLE[MAX_TARGETS + 1][NUM_MOTORS] = {
 };
 
 // ============================================================================
-// 构造函数
+// 构造与析构函数
 // ============================================================================
 
 SorterController::SorterController(AccelStepper& sharedStepper)
@@ -34,6 +37,18 @@ SorterController::SorterController(AccelStepper& sharedStepper)
     _pipeline[i] = 0;
     _motorDirs[i] = md[i];
   }
+
+  // 实例化各 App，默认激活正常生产模式
+  _appProduction = new AppProduction(*this);
+  _appMotorDiag = new AppMotorDiag(*this);
+  _appHallDiag = new AppHallDiag(*this);
+  _activeApp = _appProduction;
+}
+
+SorterController::~SorterController() {
+  delete _appProduction;
+  delete _appMotorDiag;
+  delete _appHallDiag;
 }
 
 // ============================================================================
@@ -45,6 +60,11 @@ void SorterController::begin() {
   _motorHardware.begin(STEPPER_MAX_SPEED, STEPPER_ACCELERATION);
   _entranceSensor.begin();
 
+  // 启动当前默认的 App
+  if (_activeApp) {
+    _activeApp->begin();
+  }
+
   LOG_I("SorterController 初始化完成");
 }
 
@@ -53,16 +73,53 @@ void SorterController::begin() {
 // ============================================================================
 
 void SorterController::queueTarget(int targetID) {
-  _queue.push(targetID);
+  if (_state != DIAG_MOTOR && _state != DIAG_HALL) {
+    _queue.push(targetID);
+  } else {
+    LOG_W("处于诊断模式，忽略入队目标 ID: %d", targetID);
+  }
 }
 
 void SorterController::triggerHoming() {
+  switchApp(HOMING); // 切换回生产模式并开始归零流程
   LOG_I("进入归零模式");
   _queue.flush();
   for (int i = 0; i < NUM_MOTORS; i++) _pipeline[i] = 0;
   
   _homing.start();
-  _state = HOMING;
+}
+
+void SorterController::switchApp(State newState) {
+  if (_state == newState) return;
+
+  LOG_I("SorterController: 切换模式从 %d 至 %d", _state, newState);
+
+  // 结束当前 APP 的生命周期
+  if (_activeApp) {
+    _activeApp->end();
+  }
+
+  _state = newState;
+  
+  // 根据新状态，指派对应的逻辑执行体 APP
+  if (_state == DIAG_MOTOR) {
+    _activeApp = _appMotorDiag;
+  } else if (_state == DIAG_HALL) {
+    _activeApp = _appHallDiag;
+  } else {
+    _activeApp = _appProduction;
+  }
+
+  // 启动新 APP 的初始化
+  if (_activeApp) {
+    _activeApp->begin();
+  }
+}
+
+void SorterController::handleShortPress() {
+  if (_state == DIAG_MOTOR) {
+    _appMotorDiag->nextMotor();
+  }
 }
 
 void SorterController::clearError() {
@@ -76,72 +133,12 @@ void SorterController::clearError() {
 // ============================================================================
 
 void SorterController::update() {
-  // 始终驱动步进电机进行运动脉冲分配
+  // 始终驱动步进电机进行运动脉冲分配，供各个 App 共享底层脉冲生成器
   _motorHardware.run();
 
-  switch (_state) {
-
-    case IDLE: {
-      _entranceSensor.update();
-      if (_entranceSensor.isRisingEdge()) {
-        _state = NEW_BEAT_PREP;
-      }
-      break;
-    }
-
-    case NEW_BEAT_PREP:
-      LOG_I("--- 新节拍开始 ---");
-      _advancePipeline();
-      _printPipelineState();
-
-      // 规划并下发组运动
-      {
-        MotionCommand cmd = _planner.planGroupMove(_pipeline, _motorDirs);
-        _motorHardware.setEnableMask(cmd.enable_mask);
-        _spiBus.transfer(cmd.dir_state);
-
-        if (cmd.move_any) {
-          _motorHardware.startMove(cmd.steps);
-        }
-      }
-
-      _state = MOVING_TO_ROUTE;
-      break;
-
-    case MOVING_TO_ROUTE:
-      if (!_motorHardware.isMoving()) {
-        LOG_D("已到达分拣位置，等待物品滑行...");
-        _motorHardware.setCurrentPosition(0);
-        _timerMark = millis();
-        _state = SLIDING_WAIT;
-      }
-      break;
-
-    case SLIDING_WAIT:
-      if (millis() - _timerMark >= SLIDE_WAIT_MS) {
-        LOG_D("滑行等待结束，本节拍完成");
-        _state = COMPLETED_BEAT;
-      }
-      break;
-
-    case COMPLETED_BEAT:
-      _state = IDLE;
-      break;
-
-    case HOMING:
-      if (!_homing.update()) {
-        if (_homing.hasError()) {
-          _errorCode = ERR_HOMING_TIMEOUT;
-          _state = ERROR_STATE;
-        } else if (_homing.isHomingDone()) {
-          _state = IDLE;
-        }
-      }
-      break;
-
-    case ERROR_STATE:
-      // 等待外部复位（或喂狗）
-      break;
+  // 委托给当前活跃的 APP 执行其专属逻辑
+  if (_activeApp) {
+    _activeApp->update();
   }
 }
 
