@@ -12,7 +12,7 @@
 #define DUMMY_DIR_PIN      22
 
 // --- 8路与门脉冲控制引脚 (高电平放行脉冲/电机旋转，低电平屏蔽脉冲/电机锁步。驱动芯片使能脚已接地常激活) ---
-// 数组在 SorterController 中定义，这里声明具体引脚
+// 数组在 FluxDealer 中定义，这里声明具体引脚
 #define EN_PIN_0           12
 #define EN_PIN_1           13
 #define EN_PIN_2           14

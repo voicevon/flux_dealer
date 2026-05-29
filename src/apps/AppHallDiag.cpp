@@ -1,10 +1,10 @@
 #include "apps/AppHallDiag.h"
-#include "SorterController.h"
+#include "FluxDealer.h"
 #include "pins.h"
 #include "Logger.h"
 #include <Arduino.h>
 
-AppHallDiag::AppHallDiag(SorterController& controller) 
+AppHallDiag::AppHallDiag(FluxDealer& controller) 
   : _controller(controller), _lastPrintTime(0), _lastHomeState(0xFF) {}
 
 void AppHallDiag::begin() {

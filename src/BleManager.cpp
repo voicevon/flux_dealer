@@ -18,9 +18,9 @@ public:
 };
 
 class TargetCallbacks : public BLECharacteristicCallbacks {
-  SorterController* _sorter;
+  FluxDealer* _sorter;
 public:
-  TargetCallbacks(SorterController* sorter) : _sorter(sorter) {}
+  TargetCallbacks(FluxDealer* sorter) : _sorter(sorter) {}
   void onWrite(BLECharacteristic *pCharacteristic) override {
     std::string value = pCharacteristic->getValue();
     if (value.length() > 0) {
@@ -39,10 +39,10 @@ public:
 };
 
 class CmdCallbacks : public BLECharacteristicCallbacks {
-  SorterController* _sorter;
+  FluxDealer* _sorter;
   BleManager* _manager;
 public:
-  CmdCallbacks(SorterController* sorter, BleManager* manager) : _sorter(sorter), _manager(manager) {}
+  CmdCallbacks(FluxDealer* sorter, BleManager* manager) : _sorter(sorter), _manager(manager) {}
   void onWrite(BLECharacteristic *pCharacteristic) override {
     std::string value = pCharacteristic->getValue();
     if (value.length() > 0) {
@@ -66,13 +66,13 @@ BleManager::BleManager()
     _deviceConnected(false), _identifyEndTime(0) 
 {}
 
-void BleManager::begin(SorterController* sorter) {
+void BleManager::begin(FluxDealer* sorter) {
   _sorter = sorter;
 
   // 获取唯一的 MAC 地址并生成唯一的广播名称
   uint64_t mac = ESP.getEfuseMac();
   char bleName[30];
-  snprintf(bleName, sizeof(bleName), "Sorter_%02X%02X%02X", 
+  snprintf(bleName, sizeof(bleName), "FluxDealer_%02X%02X%02X", 
            (uint8_t)(mac >> 16), (uint8_t)(mac >> 8), (uint8_t)mac);
 
   BLEDevice::init(bleName);
@@ -81,7 +81,7 @@ void BleManager::begin(SorterController* sorter) {
   _pServer = BLEDevice::createServer();
   _pServer->setCallbacks(new ServerCallbacks(this));
 
-  BLEService *pService = _pServer->createService(SORTER_SERVICE_UUID);
+  BLEService *pService = _pServer->createService(FLUX_DEALER_SERVICE_UUID);
 
   // 1. 接收 Target ID 特征
   _pTargetChar = pService->createCharacteristic(
@@ -117,16 +117,16 @@ void BleManager::begin(SorterController* sorter) {
   pService->start();
 
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SORTER_SERVICE_UUID);
+  pAdvertising->addServiceUUID(FLUX_DEALER_SERVICE_UUID);
   pAdvertising->setScanResponse(true);
   pAdvertising->setMinPreferred(0x06);  
   pAdvertising->setMinPreferred(0x12);
   BLEDevice::startAdvertising();
 
-  LOG_I("BLE 服务已启动，包含目标/状态/错误/指令特征，等待 sorter_mini_phone 连接...");
+  LOG_I("BLE 服务已启动，包含目标/状态/错误/指令特征，等待 flux_dealer_phone 连接...");
 }
 
-void BleManager::updateStatus(SorterController::State state) {
+void BleManager::updateStatus(FluxDealer::State state) {
   if (!_deviceConnected) return;
 
   uint8_t stateVal = static_cast<uint8_t>(state);
@@ -134,7 +134,7 @@ void BleManager::updateStatus(SorterController::State state) {
   _pStatusChar->notify();
 }
 
-void BleManager::updateError(SorterController::ErrorCode errorCode) {
+void BleManager::updateError(FluxDealer::ErrorCode errorCode) {
   if (!_deviceConnected) return;
 
   uint8_t errorVal = static_cast<uint8_t>(errorCode);

@@ -3,17 +3,17 @@
 
 #include "apps/AppBase.h"
 
-class SorterController;
+class FluxDealer;
 
 class AppProduction : public AppBase {
 public:
-  AppProduction(SorterController& controller);
+  AppProduction(FluxDealer& controller);
   void begin() override;
   void update() override;
   void end() override;
 
 private:
-  SorterController& _controller;
+  FluxDealer& _controller;
 };
 
 #endif // APP_PRODUCTION_H

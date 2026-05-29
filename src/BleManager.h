@@ -6,10 +6,10 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include "SorterController.h"
+#include "FluxDealer.h"
 
 // 蓝牙服务与特征 UUID (可以使用预定义的标准或自定义)
-#define SORTER_SERVICE_UUID        "1c95d5e3-d8f7-413a-bf3d-7a2e5d7be87e"
+#define FLUX_DEALER_SERVICE_UUID        "1c95d5e3-d8f7-413a-bf3d-7a2e5d7be87e"
 #define TARGET_CHARACTERISTIC_UUID "1c95d5e3-d8f7-413a-bf3d-7a2e5d7be87d" // 手机端向机器发送目标 ID
 #define STATUS_CHARACTERISTIC_UUID "1c95d5e3-d8f7-413a-bf3d-7a2e5d7be87c" // 机器向手机端广播当前状态
 #define ERROR_CHARACTERISTIC_UUID  "2c95d5e3-d8f7-413a-bf3d-7a2e5d7be87e" // 机器向手机端广播当前错误码 (Notify)
@@ -18,15 +18,15 @@
 class BleManager {
 public:
   BleManager();
-  void begin(SorterController* sorter);
-  void updateStatus(SorterController::State state);
-  void updateError(SorterController::ErrorCode errorCode);
+  void begin(FluxDealer* sorter);
+  void updateStatus(FluxDealer::State state);
+  void updateError(FluxDealer::ErrorCode errorCode);
   bool isConnected() const;
   void triggerIdentifyBlink();
   bool isIdentifying() const;
 
 private:
-  SorterController* _sorter;
+  FluxDealer* _sorter;
   BLEServer* _pServer;
   BLECharacteristic* _pTargetChar;
   BLECharacteristic* _pStatusChar;

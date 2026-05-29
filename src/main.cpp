@@ -2,7 +2,7 @@
 #include <AccelStepper.h>
 #include <esp_task_wdt.h>
 #include "pins.h"
-#include "SorterController.h"
+#include "FluxDealer.h"
 #include "BleManager.h"
 #include "Logger.h"
 
@@ -12,7 +12,7 @@
 // ============================================================================
 AccelStepper sharedStepper(AccelStepper::DRIVER, SHARED_STEP_PIN, DUMMY_DIR_PIN);
 
-SorterController sorter(sharedStepper);
+FluxDealer fluxDealer(sharedStepper);
 BleManager bleManager;
 
 // 看门狗超时时间（秒）
@@ -36,8 +36,8 @@ void setup() {
   esp_task_wdt_add(NULL);
   LOG_I("看门狗已启用 (超时 %d 秒)", WDT_TIMEOUT_S);
 
-  sorter.begin();
-  bleManager.begin(&sorter);
+  fluxDealer.begin();
+  bleManager.begin(&fluxDealer);
 
   LOG_I("初始化完成，等待 sorter_mini_phone 连接或传感器触发...");
 }
@@ -66,17 +66,17 @@ void loop() {
       // 长按 1.5s 切换 APP
       if (duration >= 1500 && !longPressTriggered) {
         longPressTriggered = true;
-        SorterController::State currentState = sorter.getState();
-        SorterController::State nextState;
+        FluxDealer::State currentState = fluxDealer.getState();
+        FluxDealer::State nextState;
         
-        if (currentState == SorterController::DIAG_MOTOR) {
-          nextState = SorterController::DIAG_HALL;
-        } else if (currentState == SorterController::DIAG_HALL) {
-          nextState = SorterController::IDLE; // 返回正常模式
+        if (currentState == FluxDealer::DIAG_MOTOR) {
+          nextState = FluxDealer::DIAG_HALL;
+        } else if (currentState == FluxDealer::DIAG_HALL) {
+          nextState = FluxDealer::IDLE; // 返回正常模式
         } else {
-          nextState = SorterController::DIAG_MOTOR;
+          nextState = FluxDealer::DIAG_MOTOR;
         }
-        sorter.switchApp(nextState);
+        fluxDealer.switchApp(nextState);
       }
     }
   } else {
@@ -84,7 +84,7 @@ void loop() {
       unsigned long duration = millis() - buttonPressTime;
       if (!longPressTriggered && duration >= 50) {
         // 短按触发诊断模式下的换向/换电机等功能
-        sorter.handleShortPress();
+        fluxDealer.handleShortPress();
       }
       buttonPressTime = 0;
       longPressTriggered = false;
@@ -93,11 +93,11 @@ void loop() {
   lastButtonState = currentButtonState;
 
   // 维护之前的状态以决定是否通知蓝牙
-  static SorterController::State lastState = SorterController::IDLE;
-  static SorterController::ErrorCode lastError = SorterController::ERR_NONE;
+  static FluxDealer::State lastState = FluxDealer::IDLE;
+  static FluxDealer::ErrorCode lastError = FluxDealer::ERR_NONE;
   
   // 心跳 / 物理识别指示灯闪烁控制 (仅在非霍尔诊断模式下闪烁，霍尔诊断由 AppHallDiag 独占)
-  if (sorter.getState() != SorterController::DIAG_HALL) {
+  if (fluxDealer.getState() != FluxDealer::DIAG_HALL) {
     static unsigned long lastBeat = 0;
     unsigned long blinkInterval = bleManager.isIdentifying() ? 50 : 1000; // 识别期 10Hz 快闪，平时 1Hz 慢闪
     if (millis() - lastBeat >= blinkInterval) {
@@ -106,17 +106,17 @@ void loop() {
     }
   }
 
-  sorter.update();  // 驱动状态机与步进电机
+  fluxDealer.update();  // 驱动状态机与步进电机
   
   // 状态改变时，通知蓝牙
-  SorterController::State currentState = sorter.getState();
+  FluxDealer::State currentState = fluxDealer.getState();
   if (currentState != lastState) {
     bleManager.updateStatus(currentState);
     lastState = currentState;
   }
 
   // 错误码改变时，通知蓝牙
-  SorterController::ErrorCode currentError = sorter.getErrorCode();
+  FluxDealer::ErrorCode currentError = fluxDealer.getErrorCode();
   if (currentError != lastError) {
     bleManager.updateError(currentError);
     lastError = currentError;

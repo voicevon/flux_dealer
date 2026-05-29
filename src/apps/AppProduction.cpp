@@ -1,9 +1,9 @@
 #include "apps/AppProduction.h"
-#include "SorterController.h"
+#include "FluxDealer.h"
 #include "Logger.h"
 #include <Arduino.h>
 
-AppProduction::AppProduction(SorterController& controller) : _controller(controller) {}
+AppProduction::AppProduction(FluxDealer& controller) : _controller(controller) {}
 
 void AppProduction::begin() {
   LOG_I("AppProduction (正常生产模式) 启动");
@@ -15,15 +15,15 @@ void AppProduction::end() {
 
 void AppProduction::update() {
   switch (_controller._state) {
-    case SorterController::IDLE: {
+    case FluxDealer::IDLE: {
       _controller._entranceSensor.update();
       if (_controller._entranceSensor.isRisingEdge()) {
-        _controller._state = SorterController::NEW_BEAT_PREP;
+        _controller._state = FluxDealer::NEW_BEAT_PREP;
       }
       break;
     }
 
-    case SorterController::NEW_BEAT_PREP:
+    case FluxDealer::NEW_BEAT_PREP:
       LOG_I("--- 新节拍开始 ---");
       _controller._advancePipeline();
       _controller._printPipelineState();
@@ -39,41 +39,41 @@ void AppProduction::update() {
         }
       }
 
-      _controller._state = SorterController::MOVING_TO_ROUTE;
+      _controller._state = FluxDealer::MOVING_TO_ROUTE;
       break;
 
-    case SorterController::MOVING_TO_ROUTE:
+    case FluxDealer::MOVING_TO_ROUTE:
       if (!_controller._motorHardware.isMoving()) {
         LOG_D("已到达分拣位置，等待物品滑行...");
         _controller._motorHardware.setCurrentPosition(0);
         _controller._timerMark = millis();
-        _controller._state = SorterController::SLIDING_WAIT;
+        _controller._state = FluxDealer::SLIDING_WAIT;
       }
       break;
 
-    case SorterController::SLIDING_WAIT:
+    case FluxDealer::SLIDING_WAIT:
       if (millis() - _controller._timerMark >= SLIDE_WAIT_MS) {
         LOG_D("滑行等待结束，本节拍完成");
-        _controller._state = SorterController::COMPLETED_BEAT;
+        _controller._state = FluxDealer::COMPLETED_BEAT;
       }
       break;
 
-    case SorterController::COMPLETED_BEAT:
-      _controller._state = SorterController::IDLE;
+    case FluxDealer::COMPLETED_BEAT:
+      _controller._state = FluxDealer::IDLE;
       break;
 
-    case SorterController::HOMING:
+    case FluxDealer::HOMING:
       if (!_controller._homing.update()) {
         if (_controller._homing.hasError()) {
-          _controller._errorCode = SorterController::ERR_HOMING_TIMEOUT;
-          _controller._state = SorterController::ERROR_STATE;
+          _controller._errorCode = FluxDealer::ERR_HOMING_TIMEOUT;
+          _controller._state = FluxDealer::ERROR_STATE;
         } else if (_controller._homing.isHomingDone()) {
-          _controller._state = SorterController::IDLE;
+          _controller._state = FluxDealer::IDLE;
         }
       }
       break;
 
-    case SorterController::ERROR_STATE:
+    case FluxDealer::ERROR_STATE:
       // 等待外部复位
       break;
     

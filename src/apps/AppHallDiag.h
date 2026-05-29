@@ -3,17 +3,17 @@
 
 #include "apps/AppBase.h"
 
-class SorterController;
+class FluxDealer;
 
 class AppHallDiag : public AppBase {
 public:
-  AppHallDiag(SorterController& controller);
+  AppHallDiag(FluxDealer& controller);
   void begin() override;
   void update() override;
   void end() override;
 
 private:
-  SorterController& _controller;
+  FluxDealer& _controller;
   unsigned long _lastPrintTime;
   uint8_t _lastHomeState;
 };

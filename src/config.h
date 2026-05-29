@@ -14,7 +14,7 @@
 //   MS1=L MS2=H MS3=L -> 1/4步     MS1=H MS2=H MS3=L -> 1/8步
 //   MS1=H MS2=H MS3=H -> 1/16步
 // 引脚定义见 pins.h（MS1_PIN / MS2_PIN / MS3_PIN）
-#define MICROSTEP_RESOLUTION  1    // 软件目标细分：1 | 2 | 4 | 8 | 16
+#define MICROSTEP_RESOLUTION  2    // 软件目标细分：1 | 2 | 4 | 8 | 16
 
 // --- 分拣逻辑配置 ---
 #define MAX_TARGETS           8     // 最大支持的目标槽位数
@@ -37,11 +37,10 @@ extern const int8_t ROUTING_TABLE[MAX_TARGETS + 1][NUM_MOTORS];
 #define STEPPER_MAX_SPEED     6400.0f   // 最大速度（步/秒）
 #define STEPPER_ACCELERATION  6400.0f   // 加速度（步/秒²）
 #define HOMING_CONSTANT_SPEED (-800.0f) // 归零恒速（步/秒，负值 = 朝向限位开关方向）
-#define DIAG_MOTOR_SPEED      1600.0f   // 诊断模式电机最大速度（步/秒）
-#define DIAG_MOTOR_ACCEL      3200.0f   // 诊断模式电机加速度（步/秒²）
+
 
 // --- 各轴电机方向 (1 = 正向，-1 = 反向) ---
-// 为了兼容8电机架构，这里暂不使用宏，而是在 SorterController 中统一定义为常量数组。
+// 为了兼容8电机架构，这里暂不使用宏，而是在 FluxDealer 中统一定义为常量数组。
 
 // --- 逻辑位置（方向系数乘入之前的步数值）---
 #define POS_NEUTRAL       0L

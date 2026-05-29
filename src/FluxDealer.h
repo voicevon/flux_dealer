@@ -1,5 +1,5 @@
-#ifndef SORTER_CONTROLLER_H
-#define SORTER_CONTROLLER_H
+#ifndef FLUX_DEALER_H
+#define FLUX_DEALER_H
 
 #include <AccelStepper.h>
 #include "config.h"
@@ -11,7 +11,7 @@
 #include "HomingController.h"
 
 // ============================================================================
-// SorterController —— 分拣机核心控制器
+// FluxDealer —— 分拣机核心控制器
 //
 // 负责管理三级物品流水线与节拍同步状态机。
 // 在 setup() 中调用 begin() 完成硬件初始化，
@@ -23,7 +23,7 @@ class AppProduction;
 class AppMotorDiag;
 class AppHallDiag;
 
-class SorterController {
+class FluxDealer {
 public:
   // ---- 公开状态枚举（可供主程序读取）---------------------------------------
   enum State {
@@ -47,8 +47,8 @@ public:
   };
 
   // -------------------------------------------------------------------------
-  SorterController(AccelStepper& sharedStepper);
-  ~SorterController();
+  FluxDealer(AccelStepper& sharedStepper);
+  ~FluxDealer();
 
   // 在 setup() 中调用一次——配置电机速度/加速度及限位开关引脚。
   void begin();
@@ -117,4 +117,4 @@ private:
   void _printPipelineState() const; // 串口打印当前流水线状态
 };
 
-#endif // SORTER_CONTROLLER_H
+#endif // FLUX_DEALER_H

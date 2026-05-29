@@ -1,10 +1,10 @@
 
 #include "apps/AppMotorDiag.h"
-#include "SorterController.h"
+#include "FluxDealer.h"
 #include "Logger.h"
 #include <Arduino.h>
 
-AppMotorDiag::AppMotorDiag(SorterController& controller) 
+AppMotorDiag::AppMotorDiag(FluxDealer& controller) 
   : _controller(controller), _currentMotor(0), _testState(TEST_IDLE), _pauseTimer(0) {}
 
 void AppMotorDiag::begin() {
@@ -53,11 +53,11 @@ void AppMotorDiag::update() {
       break;
 
     case TEST_MOVE_RIGHT:
-      LOG_D("[诊断模式] 电机 M%d 向右旋转 90 度", _currentMotor);
+      LOG_D("[诊断模式] 电机 M%d 向右旋转 %d 圈", _currentMotor, DIAG_TARGET_ROTATIONS);
       // 设置方向：当前测试电机位为 1 (正转)
       _controller._spiBus.transfer(1 << _currentMotor);
       _controller._motorHardware.setEnableMask(1 << _currentMotor);
-      _controller._motorHardware.startMove(STEPS_PER_90DEG);
+      _controller._motorHardware.startMove(DIAG_STEPS);
       _testState = TEST_WAIT_RIGHT;
       break;
 
@@ -76,11 +76,11 @@ void AppMotorDiag::update() {
       break;
 
     case TEST_MOVE_LEFT:
-      LOG_D("[诊断模式] 电机 M%d 向左旋转 90 度", _currentMotor);
+      LOG_D("[诊断模式] 电机 M%d 向左旋转 %d 圈", _currentMotor, DIAG_TARGET_ROTATIONS);
       // 设置方向：所有位为 0 (反转)
       _controller._spiBus.transfer(0);
       _controller._motorHardware.setEnableMask(1 << _currentMotor);
-      _controller._motorHardware.startMove(STEPS_PER_90DEG);
+      _controller._motorHardware.startMove(DIAG_STEPS);
       _testState = TEST_WAIT_LEFT;
       break;
 
