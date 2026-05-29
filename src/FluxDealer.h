@@ -1,7 +1,6 @@
 #ifndef FLUX_DEALER_H
 #define FLUX_DEALER_H
 
-#include <AccelStepper.h>
 #include "config.h"
 #include "InputQueue.h"
 #include "hal/MotorHardware.h"
@@ -22,6 +21,7 @@ class AppBase;
 class AppProduction;
 class AppMotorDiag;
 class AppHallDiag;
+class AppMicrostepDiag;
 
 class FluxDealer {
 public:
@@ -34,6 +34,7 @@ public:
     COMPLETED_BEAT,   // 本节拍结束，准备回到空闲
     HOMING,           // 归零校准中
     ERROR_STATE,      // 硬件或运行异常状态
+    DIAG_MICROSTEP,   // 诊断细分模式
     DIAG_MOTOR,       // 诊断电机模式
     DIAG_HALL         // 诊断霍尔模式
   };
@@ -47,7 +48,7 @@ public:
   };
 
   // -------------------------------------------------------------------------
-  FluxDealer(AccelStepper& sharedStepper);
+  FluxDealer();
   ~FluxDealer();
 
   // 在 setup() 中调用一次——配置电机速度/加速度及限位开关引脚。
@@ -78,6 +79,7 @@ private:
   friend class AppProduction;
   friend class AppMotorDiag;
   friend class AppHallDiag;
+  friend class AppMicrostepDiag;
 
   // ---- HAL 对象 ------------------------------------------------------------
   MotorHardware _motorHardware;
@@ -106,10 +108,11 @@ private:
   int _motorDirs[NUM_MOTORS];
 
   // ---- APP 实例指针 --------------------------------------------------------
-  AppProduction* _appProduction;
-  AppMotorDiag*  _appMotorDiag;
-  AppHallDiag*   _appHallDiag;
-  AppBase*       _activeApp;
+  AppProduction*    _appProduction;
+  AppMotorDiag*     _appMotorDiag;
+  AppHallDiag*      _appHallDiag;
+  AppMicrostepDiag* _appMicrostepDiag;
+  AppBase*          _activeApp;
 
   // ---- 私有辅助函数 --------------------------------------------------------
 

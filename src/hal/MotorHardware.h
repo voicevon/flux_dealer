@@ -2,11 +2,11 @@
 #define MOTOR_HARDWARE_H
 
 #include <Arduino.h>
-#include <AccelStepper.h>
+#include "FastAccelStepper.h"
 
 class MotorHardware {
 public:
-  MotorHardware(AccelStepper& sharedStepper, const uint8_t* enablePins, uint8_t numMotors);
+  MotorHardware(const uint8_t* enablePins, uint8_t numMotors);
   ~MotorHardware();
 
   void begin(float maxSpeed, float acceleration);
@@ -25,11 +25,10 @@ public:
   bool isMoving() const;
   void setCurrentPosition(long pos);
   void setSpeed(float speed);
-  void run();
   void runSpeed();
 
 private:
-  AccelStepper& _sharedStepper;
+  FastAccelStepper* _stepper;
   uint8_t* _enablePins;
   uint8_t _numMotors;
 };

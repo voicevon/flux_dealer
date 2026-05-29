@@ -4,6 +4,7 @@
 #include "apps/AppProduction.h"
 #include "apps/AppMotorDiag.h"
 #include "apps/AppHallDiag.h"
+#include "apps/AppMicrostepDiag.h"
 #include <Arduino.h>
 
 // 定义全局的路由配置表
@@ -24,8 +25,8 @@ const int8_t ROUTING_TABLE[MAX_TARGETS + 1][NUM_MOTORS] = {
 // 构造与析构函数
 // ============================================================================
 
-FluxDealer::FluxDealer(AccelStepper& sharedStepper)
-  : _motorHardware(sharedStepper, (const uint8_t[]){EN_PIN_0, EN_PIN_1, EN_PIN_2, EN_PIN_3, EN_PIN_4, EN_PIN_5, EN_PIN_6, EN_PIN_7}, NUM_MOTORS),
+FluxDealer::FluxDealer()
+  : _motorHardware((const uint8_t[]){EN_PIN_0, EN_PIN_1, EN_PIN_2, EN_PIN_3, EN_PIN_4, EN_PIN_5, EN_PIN_6, EN_PIN_7}, NUM_MOTORS),
     _spiBus(LATCH_PIN, CLOCK_PIN, DIR_DATA_OUT, HOME_DATA_IN),
     _entranceSensor(ENTRANCE_SENSOR_PIN, DEBOUNCE_MS),
     _planner(),
@@ -42,6 +43,7 @@ FluxDealer::FluxDealer(AccelStepper& sharedStepper)
   _appProduction = new AppProduction(*this);
   _appMotorDiag = new AppMotorDiag(*this);
   _appHallDiag = new AppHallDiag(*this);
+  _appMicrostepDiag = new AppMicrostepDiag(*this);
   _activeApp = _appProduction;
 }
 
@@ -49,6 +51,7 @@ FluxDealer::~FluxDealer() {
   delete _appProduction;
   delete _appMotorDiag;
   delete _appHallDiag;
+  delete _appMicrostepDiag;
 }
 
 // ============================================================================
@@ -108,7 +111,7 @@ void FluxDealer::begin() {
 // ============================================================================
 
 void FluxDealer::queueTarget(int targetID) {
-  if (_state != DIAG_MOTOR && _state != DIAG_HALL) {
+  if (_state != DIAG_MOTOR && _state != DIAG_HALL && _state != DIAG_MICROSTEP) {
     _queue.push(targetID);
   } else {
     LOG_W("FluxDealer: 处于诊断模式，忽略入队目标 ID: %d", targetID);
@@ -141,6 +144,8 @@ void FluxDealer::switchApp(State newState) {
     _activeApp = _appMotorDiag;
   } else if (_state == DIAG_HALL) {
     _activeApp = _appHallDiag;
+  } else if (_state == DIAG_MICROSTEP) {
+    _activeApp = _appMicrostepDiag;
   } else {
     _activeApp = _appProduction;
   }
@@ -154,6 +159,8 @@ void FluxDealer::switchApp(State newState) {
 void FluxDealer::handleShortPress() {
   if (_state == DIAG_MOTOR) {
     _appMotorDiag->nextMotor();
+  } else if (_state == DIAG_MICROSTEP) {
+    _appMicrostepDiag->nextMicrostep();
   }
 }
 
@@ -168,9 +175,6 @@ void FluxDealer::clearError() {
 // ============================================================================
 
 void FluxDealer::update() {
-  // 始终驱动步进电机进行运动脉冲分配，供各个 App 共享底层脉冲生成器
-  _motorHardware.run();
-
   // 委托给当前活跃的 APP 执行其专属逻辑
   if (_activeApp) {
     _activeApp->update();

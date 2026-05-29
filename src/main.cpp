@@ -1,18 +1,11 @@
 #include <Arduino.h>
-#include <AccelStepper.h>
 #include <esp_task_wdt.h>
 #include "pins.h"
 #include "FluxDealer.h"
 #include "BleManager.h"
 #include "Logger.h"
 
-// ============================================================================
-// 硬件：ESP32
-// 单一共享 STEP 引脚用于产生同步脉冲，独立 DIR 和 EN(脉冲屏蔽)
-// ============================================================================
-AccelStepper sharedStepper(AccelStepper::DRIVER, SHARED_STEP_PIN, DUMMY_DIR_PIN);
-
-FluxDealer fluxDealer(sharedStepper);
+FluxDealer fluxDealer;
 BleManager bleManager;
 
 // 看门狗超时时间（秒）
@@ -69,12 +62,14 @@ void loop() {
         FluxDealer::State currentState = fluxDealer.getState();
         FluxDealer::State nextState;
         
-        if (currentState == FluxDealer::DIAG_MOTOR) {
+        if (currentState == FluxDealer::DIAG_MICROSTEP) {
+          nextState = FluxDealer::DIAG_MOTOR;
+        } else if (currentState == FluxDealer::DIAG_MOTOR) {
           nextState = FluxDealer::DIAG_HALL;
         } else if (currentState == FluxDealer::DIAG_HALL) {
           nextState = FluxDealer::IDLE; // 返回正常模式
         } else {
-          nextState = FluxDealer::DIAG_MOTOR;
+          nextState = FluxDealer::DIAG_MICROSTEP;
         }
         fluxDealer.switchApp(nextState);
       }

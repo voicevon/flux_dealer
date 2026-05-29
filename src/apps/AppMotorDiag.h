@@ -5,8 +5,8 @@
 #include "config.h"
 
 // --- 电机诊断配置 ---
-#define DIAG_TARGET_ROTATIONS 3   // 诊断模式下执行机构（分拣轮）目标旋转圈数
-#define DIAG_STEPS  (MOTOR_FULL_STEPS * MICROSTEP_RESOLUTION * GEAR_RATIO * DIAG_TARGET_ROTATIONS)
+#define DIAG_TARGET_ROTATIONS 0.25f   // 诊断模式下执行机构（分拣轮）目标旋转圈数
+#define DIAG_STEPS  ((long)(MOTOR_FULL_STEPS * MICROSTEP_RESOLUTION * GEAR_RATIO * DIAG_TARGET_ROTATIONS))
 #define DIAG_MOTOR_SPEED      400.0f   // 诊断模式电机最大速度（步/秒）
 #define DIAG_MOTOR_ACCEL      800.0f   // 诊断模式电机加速度（步/秒²）
 

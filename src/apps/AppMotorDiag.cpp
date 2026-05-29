@@ -53,7 +53,7 @@ void AppMotorDiag::update() {
       break;
 
     case TEST_MOVE_RIGHT:
-      LOG_D("[诊断模式] 电机 M%d 向右旋转 %d 圈", _currentMotor, DIAG_TARGET_ROTATIONS);
+      LOG_D("[诊断模式] 电机 M%d 向右旋转 %.2f 圈", _currentMotor, DIAG_TARGET_ROTATIONS);
       // 设置方向：当前测试电机位为 1 (正转)
       _controller._spiBus.transfer(1 << _currentMotor);
       _controller._motorHardware.setEnableMask(1 << _currentMotor);
@@ -76,7 +76,7 @@ void AppMotorDiag::update() {
       break;
 
     case TEST_MOVE_LEFT:
-      LOG_D("[诊断模式] 电机 M%d 向左旋转 %d 圈", _currentMotor, DIAG_TARGET_ROTATIONS);
+      LOG_D("[诊断模式] 电机 M%d 向左旋转 %.2f 圈", _currentMotor, DIAG_TARGET_ROTATIONS);
       // 设置方向：所有位为 0 (反转)
       _controller._spiBus.transfer(0);
       _controller._motorHardware.setEnableMask(1 << _currentMotor);

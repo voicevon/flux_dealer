@@ -1,7 +1,11 @@
 #include "hal/MotorHardware.h"
+#include "pins.h"
 
-MotorHardware::MotorHardware(AccelStepper& sharedStepper, const uint8_t* enablePins, uint8_t numMotors)
-  : _sharedStepper(sharedStepper), _numMotors(numMotors) 
+// 全局静态的 FastAccelStepperEngine 实例
+static FastAccelStepperEngine engine = FastAccelStepperEngine();
+
+MotorHardware::MotorHardware(const uint8_t* enablePins, uint8_t numMotors)
+  : _numMotors(numMotors), _stepper(NULL)
 {
   _enablePins = new uint8_t[_numMotors];
   for (int i = 0; i < _numMotors; i++) {
@@ -20,16 +24,25 @@ void MotorHardware::begin(float maxSpeed, float acceleration) {
     digitalWrite(_enablePins[i], LOW);
   }
 
-  _sharedStepper.setMaxSpeed(maxSpeed); 
-  _sharedStepper.setAcceleration(acceleration);
+  engine.init();
+  _stepper = engine.stepperConnectToPin(SHARED_STEP_PIN);
+  if (_stepper) {
+    _stepper->setDirectionPin(DUMMY_DIR_PIN);
+    _stepper->setSpeedInHz(maxSpeed);
+    _stepper->setAcceleration(acceleration);
+  }
 }
 
 void MotorHardware::setMaxSpeed(float speed) {
-  _sharedStepper.setMaxSpeed(speed);
+  if (_stepper) {
+    _stepper->setSpeedInHz(speed);
+  }
 }
 
 void MotorHardware::setAcceleration(float accel) {
-  _sharedStepper.setAcceleration(accel);
+  if (_stepper) {
+    _stepper->setAcceleration(accel);
+  }
 }
 
 void MotorHardware::setEnableMask(uint8_t enableMask) {
@@ -47,29 +60,38 @@ void MotorHardware::setMotorEnabled(uint8_t motorIndex, bool enabled) {
 }
 
 void MotorHardware::startMove(long steps) {
-  _sharedStepper.move(steps);
+  if (_stepper) {
+    _stepper->move(steps);
+  }
 }
 
 void MotorHardware::stop() {
-  _sharedStepper.stop();
+  if (_stepper) {
+    _stepper->stopMove();
+  }
 }
 
 bool MotorHardware::isMoving() const {
-  return _sharedStepper.isRunning();
+  if (_stepper) {
+    return _stepper->isRunning();
+  }
+  return false;
 }
 
 void MotorHardware::setCurrentPosition(long pos) {
-  _sharedStepper.setCurrentPosition(pos);
+  if (_stepper) {
+    _stepper->setCurrentPosition(pos);
+  }
 }
 
 void MotorHardware::setSpeed(float speed) {
-  _sharedStepper.setSpeed(speed);
-}
-
-void MotorHardware::run() {
-  _sharedStepper.run();
+  if (_stepper) {
+    _stepper->setSpeedInHz(abs(speed));
+  }
 }
 
 void MotorHardware::runSpeed() {
-  _sharedStepper.runSpeed();
+  if (_stepper && !_stepper->isRunning()) {
+    _stepper->runForward();
+  }
 }
