@@ -157,7 +157,8 @@ void AppMicrostepDiag::update() {
 }
 
 void AppMicrostepDiag::_applyMicrostep(int ms) {
-  LOG_I("[诊断模式] 应用细分设置: %d 细分", ms);
+  long stepsFor90Deg = (long)(MOTOR_FULL_STEPS * ms * GEAR_RATIO / 4.0f);
+  LOG_I("[诊断模式] 应用细分设置: %d 细分, 90°总步数: %ld 步", ms, stepsFor90Deg);
   if (ms == 1) {
     digitalWrite(MS1_PIN, LOW);
     digitalWrite(MS2_PIN, LOW);

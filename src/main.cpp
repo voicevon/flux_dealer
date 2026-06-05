@@ -62,14 +62,14 @@ void loop() {
         FluxDealer::State currentState = fluxDealer.getState();
         FluxDealer::State nextState;
         
-        if (currentState == FluxDealer::DIAG_MICROSTEP) {
-          nextState = FluxDealer::DIAG_MOTOR;
-        } else if (currentState == FluxDealer::DIAG_MOTOR) {
+        if (currentState == FluxDealer::DIAG_MOTOR) {
           nextState = FluxDealer::DIAG_HALL;
         } else if (currentState == FluxDealer::DIAG_HALL) {
+          nextState = FluxDealer::DIAG_MICROSTEP;
+        } else if (currentState == FluxDealer::DIAG_MICROSTEP) {
           nextState = FluxDealer::IDLE; // 返回正常模式
         } else {
-          nextState = FluxDealer::DIAG_MICROSTEP;
+          nextState = FluxDealer::DIAG_MOTOR;
         }
         fluxDealer.switchApp(nextState);
       }

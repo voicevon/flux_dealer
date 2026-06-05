@@ -15,7 +15,7 @@
 //   MS1=L MS2=H MS3=L -> 1/4步     MS1=H MS2=H MS3=L -> 1/8步
 //   MS1=H MS2=H MS3=H -> 1/16步
 // 引脚定义见 pins.h（MS1_PIN / MS2_PIN / MS3_PIN）
-#define MICROSTEP_RESOLUTION  2    // 软件目标细分：1 | 2 | 4 | 8 | 16
+#define MICROSTEP_RESOLUTION  16    // 软件目标细分：1 | 2 | 4 | 8 | 16
 
 // --- 分拣逻辑配置 ---
 #define MAX_TARGETS           8     // 最大支持的目标槽位数
